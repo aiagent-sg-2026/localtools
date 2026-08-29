@@ -1,29 +1,21 @@
 # LocalTools
 
-LocalTools is a static PWA of seven private browser tools: Compress Image, Resize Image, Convert Image, Merge PDF, Extract PDF Pages, CSV Viewer, and JSON Formatter.
+LocalTools is a static, browser-first privacy PWA with seven tools: Compress Image, Resize Image, Convert Image, Merge PDF, Extract PDF Pages, CSV Viewer, and JSON Formatter. Files are processed in browser memory; nothing is uploaded or persisted by default.
 
-## Privacy and browser philosophy
+There is no backend, account, database, telemetry, runtime CDN, remote font, or external API. The service worker caches only the app shell and known assets/routes. Safety thresholds are defined in `src/safety.ts` (100 MB per file, 250 MB PDF aggregate, 50 MB CSV, 250,000 CSV rows, 1,000 PDF pages).
 
-There is no backend, account, upload, cloud, analytics, telemetry, remote font, runtime CDN, or API key. Files are read and processed in browser memory, then offered as a Blob download. User documents are not persisted by default. The service worker caches app assets only. Safety thresholds are intentionally conservative and can be found in `src/safety.ts`.
-
-## Architecture
-
-Vite + TypeScript + semantic HTML + vanilla TS + modern CSS. `src/registry.ts` is the catalogue SSOT. Shared shell, privacy, safety, download, error, and utility helpers are used by route modules. `pdf-lib` and `papaparse` are bundled/lazy loaded locally; image work uses native Canvas APIs.
-
-## Development and release
+## Development and release verification
 
 ```sh
 npm ci
-npm run dev
 npm run lint
 npm run typecheck
 npm test
-npm run build
+BASE_PATH=/localtools/ npm run build
 npm run test:e2e
+npm audit --omit=dev
 ```
 
-GitHub Pages can use `BASE_PATH=/localtools/ npm run build`; the workflow uploads `dist` without credentials. A future custom domain can use the default root base. The app supports offline navigation after an online prime and has a visible, user-confirmed update flow.
+`npm run test:e2e` builds production at `/localtools/`, serves it with the strict static server, and runs Chromium with one worker. It verifies direct routes, local image/PDF/CSV/JSON flows, responsive layout, screenshots in ignored `artifacts/qa/`, offline shell behavior, and privacy-safe processing. GitHub Pages runs the same checks before uploading `dist`; `BASE_PATH` remains configurable.
 
-## Known limitations
-
-Browser codec availability varies, PDF files must be readable by pdf-lib, and CSV display intentionally renders the first 100 matching rows while retaining data in memory. iOS real-device behavior is UNVERIFIED; a 390×844 browser viewport is covered by automated checks.
+Physical iOS, Firefox, and WebKit behavior is UNVERIFIED. Browser codec availability varies, and PDFs must be readable by pdf-lib.

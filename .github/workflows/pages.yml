@@ -12,14 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: 22, cache: npm}
+        with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:e2e
       - run: BASE_PATH=/${{ github.event.repository.name }}/ npm run build
       - uses: actions/upload-pages-artifact@v3
-        with: {path: dist}
+        with: { path: dist }
   deploy:
     needs: build
     runs-on: ubuntu-latest

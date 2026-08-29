@@ -1,2 +1,9 @@
-import {defineConfig,devices} from '@playwright/test';
-export default defineConfig({testDir:'tests/e2e',webServer:{command:'BASE_PATH=/localtools/ npm run build >/tmp/localtools-e2e-build.log && exec env BASE_PATH=/localtools/ PORT=4173 npm run serve:dist',url:'http://127.0.0.1:4173/localtools/',reuseExistingServer:false},use:{baseURL:'http://127.0.0.1:4173/localtools/',trace:'retain-on-failure'},projects:[{name:'chromium',use:{...devices['Desktop Chrome']}}]});
+import { defineConfig, devices } from '@playwright/test';
+export default defineConfig({
+  testDir: 'tests/e2e',
+  timeout: 90_000,
+  workers: 1,
+  webServer: { command: 'BASE_PATH=/localtools/ npm run build >/tmp/localtools-e2e-build.log && exec env BASE_PATH=/localtools/ PORT=4173 npm run serve:dist', url: 'http://127.0.0.1:4173/localtools/', reuseExistingServer: false },
+  use: { baseURL: 'http://127.0.0.1:4173/localtools/', trace: 'retain-on-failure' },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+});
