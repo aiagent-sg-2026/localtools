@@ -1,0 +1,4 @@
+import {download} from './utils';
+export async function decodeImage(file:File){const url=URL.createObjectURL(file);try{const image=await new Promise<HTMLImageElement>((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(Error('This image could not be decoded.'));i.src=url});return image}finally{URL.revokeObjectURL(url);}}
+export async function renderImage(file:File,width:number,height:number,type:string,quality=0.82){const image=await decodeImage(file);const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;canvas.getContext('2d')!.drawImage(image,0,0,width,height);return new Promise<Blob>((res,rej)=>canvas.toBlob(b=>b?res(b):rej(Error('This browser could not create that output.')),type,quality));}
+export const extFor=(type:string)=>type.split('/')[1].replace('jpeg','jpg');

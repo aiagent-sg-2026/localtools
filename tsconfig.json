@@ -1,0 +1,1 @@
+{"compilerOptions":{"target":"ES2022","useDefineForClassFields":true,"module":"ESNext","moduleResolution":"Bundler","strict":true,"noEmit":true,"skipLibCheck":true,"lib":["ES2022","DOM"],"types":["vite/client","vitest/globals"]},"include":["src/main.ts","src/image.ts","src/registry.ts","src/safety.ts","src/utils.ts","tests","vite.config.ts","playwright.config.ts"]}
