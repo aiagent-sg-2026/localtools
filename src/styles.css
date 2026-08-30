@@ -2,3 +2,11 @@
 
 .top{padding-top:env(safe-area-inset-top);height:calc(72px + env(safe-area-inset-top))}.drop-active{border-color:#176b5b;background:#dff2e9;box-shadow:0 0 0 4px #176b5b33}.update-state{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:#17332fee;color:#fff;font-size:1.2rem}.checkbox-panel{display:flex;flex-wrap:wrap;gap:.6rem;padding:1rem 0}.checkbox-panel label{font-weight:500}.success{margin-top:1rem;padding:.85rem 1rem;border-radius:10px;background:#e4f1ec;color:#176b5b;border:1px solid #9cc6b9}.seo-details{color:#53716a;font-size:.9rem;margin-top:2rem}.install-button{margin-left:auto}@media(max-width:600px){.top{height:calc(64px + env(safe-area-inset-top))}input,select,textarea{font-size:16px}.controls button,.button-row button{min-height:44px}}
 .remove,.sort,.update-banner button{min-height:44px}.drop:focus-visible{outline:3px solid #f2ad56;outline-offset:3px}.csv-status{margin:1rem 0;color:#53716a;font-weight:650}
+
+/* Keep narrow mobile layouts resilient to platform font/intrinsic-size differences. */
+html,body{max-width:100%;overflow-x:hidden}
+main,.panel,.controls,.controls>*,.preview-row,.file-row,.file-row>*{min-width:0;max-width:100%}
+input,select,textarea{max-width:100%;min-width:0}
+.privacy,.lede,.seo-details,.file-row span{max-width:100%;overflow-wrap:anywhere}
+.preview-row,.file-row{flex-wrap:wrap}
+@media(max-width:600px){.controls>*{flex:1 1 100%;min-width:0}.privacy{display:flex;flex-wrap:wrap}}
