@@ -4,11 +4,12 @@ LocalTools is a static, browser-first toolbox for private file work. The core pr
 
 > Private tools that run entirely in your browser. No uploads. No accounts. Your files stay on your device.
 
-V1 includes seven tools:
+V1.1 includes eight tools:
 
 - Compress Image — JPG, PNG, and feature-detected WebP output.
 - Resize Image — dimensions, aspect-ratio lock, presets, preview, download.
 - Convert Image — JPG/PNG/WebP where browser encoding support exists.
+- EXIF Privacy Cleaner — scan common image metadata blocks, rebuild visible pixels locally, verify the cleaned output, and download it without uploading.
 - Merge PDF — local multi-PDF merge with reorder/remove controls.
 - Extract PDF Pages — expressions such as `3-5,8,11-15`.
 - CSV Viewer — Worker parsing, search, sort, column filter/visibility, pagination, filtered CSV export.
@@ -26,7 +27,7 @@ Heavy CSV parsing runs in `src/workers/csv.worker.ts`. PDF support uses a locall
 
 ## Safety limits
 
-Browser RAM varies significantly across phones and desktops, so V1 uses conservative configurable thresholds from `src/safety.ts` rather than claiming unlimited file sizes. Current defaults are 100 MB per file, 250 MB aggregate PDF input, 50 MB CSV input, 250,000 CSV rows, and 1,000 PDF pages.
+Browser RAM varies significantly across phones and desktops, so V1.1 uses conservative configurable thresholds from `src/safety.ts` rather than claiming unlimited file sizes. Current defaults are 100 MB per file, 250 MB aggregate PDF input, 50 MB CSV input, 250,000 CSV rows, and 1,000 PDF pages.
 
 ## Local development
 
@@ -71,7 +72,7 @@ Set an absolute `SITE_URL` only when a real production origin is known. When sup
 
 ## PWA and offline behavior
 
-After an online prime, the homepage and all seven V1 tools are cached as an application allowlist and can run offline. Updates do not call `skipWaiting()` during install. A new worker waits, LocalTools shows `Update now`, and activation occurs only after the user chooses it; an updating state is shown before reload and a timeout message handles failure.
+After an online prime, the homepage and all eight V1.1 tools are cached as an application allowlist and can run offline. Updates do not call `skipWaiting()` during install. A new worker waits, LocalTools shows `Update now`, and activation occurs only after the user chooses it; an updating state is shown before reload and a timeout message handles failure.
 
 Installation is optional. The browser URL remains immediately useful without installing the PWA.
 
@@ -84,4 +85,5 @@ LocalTools uses progressive enhancement and feature detection. Chromium, Firefox
 - Password-protected or malformed PDFs may not be readable by `pdf-lib`.
 - Image encoding behavior depends on the browser; PNG is treated as lossless and does not expose a fake JPEG-style quality setting.
 - Very large files can exceed browser/device memory even below configured thresholds on constrained devices.
-- V1 intentionally has no cloud persistence, account sync, OCR, audio/video processing, or AI/backend integration.
+- V1.1 intentionally has no cloud persistence, account sync, OCR, audio/video processing, or AI/backend integration.
+- EXIF Privacy Cleaner verifies common EXIF/XMP/IPTC/text/comment/timestamp metadata containers; it does not claim detection of every proprietary vendor-specific metadata block. JPEG/WebP cleaning re-encodes pixels and can change compression or file size.

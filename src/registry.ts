@@ -1,5 +1,5 @@
 export type Category = 'Images' | 'PDF' | 'Data' | 'Developer';
-export type ToolModule = 'image' | 'pdf' | 'csv' | 'json';
+export type ToolModule = 'image' | 'metadata' | 'pdf' | 'csv' | 'json';
 
 export type Tool = {
   id: string;
@@ -67,6 +67,22 @@ export const TOOLS: Tool[] = [
     capabilities: ['JPG', 'PNG', 'WebP'],
     status: 'ready',
     faq: 'WebP is offered only when this browser can encode it.',
+    formats: 'JPG, PNG, WebP',
+  },
+  {
+    id: 'metadata-cleaner',
+    module: 'metadata',
+    name: 'EXIF Privacy Cleaner',
+    description: 'Remove common EXIF, location, XMP, text, and comment metadata from images.',
+    category: 'Images',
+    route: '/image/metadata-cleaner/',
+    icon: '⌫',
+    keywords: ['exif', 'metadata', 'privacy', 'gps', 'location', 'camera', 'clean', 'remove', 'photo', 'image'],
+    accepted: ['image/jpeg', 'image/png', 'image/webp'],
+    offline: true,
+    capabilities: ['Metadata scan', 'Verified re-encode'],
+    status: 'ready',
+    faq: 'The cleaner rebuilds visible pixels and verifies that common EXIF/XMP/text/comment metadata blocks are absent from the output.',
     formats: 'JPG, PNG, WebP',
   },
   {

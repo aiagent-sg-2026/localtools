@@ -10,3 +10,4 @@ input,select,textarea{max-width:100%;min-width:0}
 .privacy,.lede,.seo-details,.file-row span{max-width:100%;overflow-wrap:anywhere}
 .preview-row,.file-row{flex-wrap:wrap}
 @media(max-width:600px){.controls>*{flex:1 1 100%;min-width:0}.privacy{display:flex;flex-wrap:wrap}}
+.metadata-scan{display:flex;flex-direction:column;gap:.3rem;margin:1rem 0;padding:1rem;border:1px solid #dbe8e3;border-radius:12px;background:#f7fbf9}.metadata-scan span{color:#53716a}

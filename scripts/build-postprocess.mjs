@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const root = path.resolve('dist');
 const base = normalizeBase(process.env.BASE_PATH || '/');
-const pageNames = ['image/compress', 'image/resize', 'image/convert', 'pdf/merge', 'pdf/extract', 'data/csv-viewer', 'developer/json-formatter'];
+const pageNames = ['image/compress', 'image/resize', 'image/convert', 'image/metadata-cleaner', 'pdf/merge', 'pdf/extract', 'data/csv-viewer', 'developer/json-formatter'];
 for (const name of pageNames) {
   const flat = path.join(root, `${name}.html`);
   const directory = path.join(root, name);

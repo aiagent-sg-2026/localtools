@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { lockedHeight, lockedWidth, validateDimensions } from '../src/image';
+import { scanImageMetadata } from '../src/image-metadata';
 import { TOOLS, normalizePath, routeFor, searchTools, toolForPath } from '../src/registry';
 import { csvToText, csvRows, filterCsvRows, jsonError, jsonOperation, parsePageExpression, sortCsvRows } from '../src/utils';
 
 describe('registry and routes', () => {
-  it('has exactly seven unique tools, routes, and ids', () => { expect(TOOLS).toHaveLength(7); expect(new Set(TOOLS.map((x) => x.id)).size).toBe(7); expect(new Set(TOOLS.map((x) => x.route)).size).toBe(7); });
+  it('has exactly eight unique tools, routes, and ids', () => { expect(TOOLS).toHaveLength(8); expect(new Set(TOOLS.map((x) => x.id)).size).toBe(8); expect(new Set(TOOLS.map((x) => x.route)).size).toBe(8); });
   it('has required metadata and exactly four popular tools', () => { expect(TOOLS.every((x) => x.description && x.accepted.length && x.formats && x.faq && x.offline && x.status === 'ready')).toBe(true); expect(TOOLS.filter((x) => x.popular).map((x) => x.name)).toEqual(['Compress Image', 'Merge PDF', 'CSV Viewer', 'JSON Formatter']); });
   it('normalizes root and production paths', () => { expect(normalizePath('/localtools/', '/localtools/')).toBe('/'); expect(normalizePath('/localtools/image/compress/index.html', '/localtools/')).toBe('/image/compress/'); expect(toolForPath('/localtools/image/compress/', '/localtools/')?.id).toBe('compress-image'); expect(routeFor(TOOLS[0], '/localtools/')).toBe('/localtools/image/compress/'); });
   it('tokenizes natural search terms', () => { expect(searchTools('reduce picture size').map((x) => x.id)).toEqual(['compress-image']); });
@@ -14,6 +15,27 @@ describe('image helpers', () => {
   it('locks aspect ratio both directions', () => { expect(lockedHeight(1000, 4000, 2000)).toBe(500); expect(lockedWidth(500, 4000, 2000)).toBe(1000); });
   it('accepts boundary dimensions', () => { expect(() => validateDimensions(1, 12000)).not.toThrow(); });
   it.each([[0, 2], [2, 0], [12001, 2], [2, 12001], [1.5, 2]])('rejects unsafe dimensions %s×%s', (w, h) => { expect(() => validateDimensions(w, h)).toThrow(); });
+});
+
+
+describe('image privacy metadata scanner', () => {
+  it('detects JPEG EXIF application blocks', () => {
+    const payload = new TextEncoder().encode('Exif\0\0LocalTools');
+    const length = payload.length + 2;
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe1, length >> 8, length & 0xff, ...payload, 0xff, 0xd9]);
+    expect(scanImageMetadata(bytes, 'image/jpeg')).toEqual(['EXIF']);
+  });
+  it('detects PNG EXIF/text/timestamp chunks without treating image data as metadata', () => {
+    const signature = [0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a];
+    const chunk = (type: string) => [0,0,0,0,...new TextEncoder().encode(type),0,0,0,0];
+    const bytes = new Uint8Array([...signature, ...chunk('eXIf'), ...chunk('tEXt'), ...chunk('tIME'), ...chunk('IEND')]);
+    expect(scanImageMetadata(bytes, 'image/png')).toEqual(['EXIF', 'Text metadata', 'Timestamp']);
+  });
+  it('detects WebP EXIF and XMP chunks', () => {
+    const enc = new TextEncoder();
+    const bytes = new Uint8Array([...enc.encode('RIFF'), 20,0,0,0, ...enc.encode('WEBP'), ...enc.encode('EXIF'),0,0,0,0, ...enc.encode('XMP '),0,0,0,0]);
+    expect(scanImageMetadata(bytes, 'image/webp')).toEqual(['EXIF', 'XMP']);
+  });
 });
 
 describe('PDF page expressions', () => {

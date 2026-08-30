@@ -1,12 +1,13 @@
 import { expect, test, type Download, type Page } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
+import { scanImageMetadata } from '../../src/image-metadata';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const rawBase = process.env.E2E_BASE_PATH || '/localtools/';
 const base = rawBase === '/' ? '/' : `/${rawBase.replace(/^\/+|\/+$/g, '')}/`;
 const routes = [
-  'image/compress/', 'image/resize/', 'image/convert/',
+  'image/compress/', 'image/resize/', 'image/convert/', 'image/metadata-cleaner/',
   'pdf/merge/', 'pdf/extract/', 'data/csv-viewer/', 'developer/json-formatter/',
 ];
 
@@ -21,6 +22,25 @@ async function imageBuffer(page: Page, width = 120, height = 60) {
     return Array.from(new Uint8Array(await blob.arrayBuffer()));
   }, { width, height });
   return Buffer.from(bytes);
+}
+
+async function jpegBuffer(page: Page, width = 120, height = 60) {
+  const bytes = await page.evaluate(async ({ width, height }) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = '#176b5b'; context.fillRect(0, 0, width, height);
+    context.fillStyle = '#ffffff'; context.fillRect(10, 10, Math.max(1, width / 3), Math.max(1, height / 3));
+    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((value) => resolve(value!), 'image/jpeg', 0.92));
+    return Array.from(new Uint8Array(await blob.arrayBuffer()));
+  }, { width, height });
+  return Buffer.from(bytes);
+}
+
+function injectExifBlock(jpeg: Buffer) {
+  const payload = Buffer.concat([Buffer.from('Exif\0\0', 'binary'), Buffer.from('LocalTools privacy fixture with GPS metadata marker')]);
+  const length = Buffer.alloc(2); length.writeUInt16BE(payload.length + 2);
+  return Buffer.concat([jpeg.subarray(0, 2), Buffer.from([0xff, 0xe1]), length, payload, jpeg.subarray(2)]);
 }
 
 async function imageDimensions(page: Page, bytes: Buffer, type = 'image/png') {
@@ -84,14 +104,14 @@ function qa(page: Page, name: string) {
 
 test.beforeAll(() => fs.mkdirSync('artifacts/qa', { recursive: true }));
 
-test('homepage communicates privacy, four popular tools, seven category tools, search, and no console errors', async ({ page }) => {
+test('homepage communicates privacy, four popular tools, eight catalogue tools, search, and no console errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto(base);
   await expect(page.getByRole('heading', { name: 'Useful tools. Quietly local.' })).toBeVisible();
   await expect(page.getByText('No uploads. No accounts. Your files stay on your device.')).toBeVisible();
   await expect(page.locator('.popular .tool-card')).toHaveCount(4);
-  await expect(page.locator('.category:not(.popular) .tool-card')).toHaveCount(7);
+  await expect(page.locator('.category:not(.popular) .tool-card')).toHaveCount(8);
   for (const name of ['Compress Image', 'Merge PDF', 'CSV Viewer', 'JSON Formatter']) {
     await expect(page.locator('.popular').getByText(name, { exact: true })).toBeVisible();
   }
@@ -101,7 +121,7 @@ test('homepage communicates privacy, four popular tools, seven category tools, s
   expect(errors).toEqual([]);
 });
 
-test('all seven production directory routes load directly, reload, and unknown route is 404', async ({ page, request }) => {
+test('all eight production directory routes load directly, reload, and unknown route is 404', async ({ page, request }) => {
   for (const route of routes) {
     const staticResponse = await request.get(`${base}${route}`);
     const staticHtml = await staticResponse.text();
@@ -159,6 +179,25 @@ test('image compressor, resizer, and converter create valid local downloadable i
   await page.getByRole('button', { name: 'Process image' }).click();
   const converted = await downloadBytes(page, 'Download');
   expect(converted.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+});
+
+
+test('EXIF Privacy Cleaner detects metadata, rebuilds pixels locally, and verifies cleaned output', async ({ page }) => {
+  const source = injectExifBlock(await jpegBuffer(page, 96, 48));
+  expect(scanImageMetadata(new Uint8Array(source), 'image/jpeg')).toContain('EXIF');
+  await page.goto(`${base}image/metadata-cleaner/`);
+  await page.locator('input[type=file]').setInputFiles({ name: 'private-photo.jpg', mimeType: 'image/jpeg', buffer: source });
+  await expect(page.locator('img.preview')).toBeVisible();
+  await expect(page.getByText('Metadata detected')).toBeVisible();
+  await expect(page.getByText(/EXIF/).last()).toBeVisible();
+  await page.getByRole('button', { name: 'Remove metadata' }).click();
+  await expect(page.getByText('Metadata cleanup verified')).toBeVisible();
+  await expect(page.getByText(/No common privacy metadata blocks detected/)).toBeVisible();
+  const cleaned = await downloadBytes(page, 'Download cleaned image');
+  expect(cleaned.subarray(0, 2).toString('hex')).toBe('ffd8');
+  expect(scanImageMetadata(new Uint8Array(cleaned), 'image/jpeg')).toEqual([]);
+  expect(await imageDimensions(page, cleaned, 'image/jpeg')).toEqual({ width: 96, height: 48 });
+  await qa(page, 'metadata-cleaned');
 });
 
 test('PDF merge reorders/removes and PDF extract preserves requested page order in downloads', async ({ page }) => {
@@ -358,7 +397,7 @@ test('offline mode still processes representative image, PDF, CSV, and JSON work
   }
 });
 
-test('representative image, PDF, and CSV processing makes no cross-origin or mutating requests', async ({ page }) => {
+test('representative image, metadata-cleaning, PDF, and CSV processing makes no cross-origin or mutating requests', async ({ page }) => {
   const requests: { url: string; method: string }[] = [];
   const png = await imageBuffer(page, 64, 32);
   const pdf = await pdfBuffer([300, 301]);
@@ -368,6 +407,12 @@ test('representative image, PDF, and CSV processing makes no cross-origin or mut
   await page.locator('input[type=file]').setInputFiles({ name: 'private.png', mimeType: 'image/png', buffer: png });
   await page.getByRole('button', { name: 'Process image' }).click();
   await expect(page.getByText(/Saved|Larger by/)).toBeVisible();
+
+  await page.goto(`${base}image/metadata-cleaner/`);
+  const metadataFixture = injectExifBlock(await jpegBuffer(page, 48, 24));
+  await page.locator('input[type=file]').setInputFiles({ name: 'private-metadata.jpg', mimeType: 'image/jpeg', buffer: metadataFixture });
+  await page.getByRole('button', { name: 'Remove metadata' }).click();
+  await expect(page.getByText('Metadata cleanup verified')).toBeVisible();
 
   await page.goto(`${base}pdf/extract/`);
   await page.locator('input[type=file]').setInputFiles({ name: 'private.pdf', mimeType: 'application/pdf', buffer: pdf });
