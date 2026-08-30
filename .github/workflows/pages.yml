@@ -7,21 +7,45 @@ permissions:
   pages: write
   id-token: write
 jobs:
-  build:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: E2E_BASE_PATH=/${{ github.event.repository.name }}/ npm run test:e2e
+
+  cross-browser:
+    needs: quality
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    name: E2E (${{ matrix.browser }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: E2E_BASE_PATH=/${{ github.event.repository.name }}/ npx playwright test --project=${{ matrix.browser }}
+
+  build:
+    needs: cross-browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
       - run: BASE_PATH=/${{ github.event.repository.name }}/ npm run build
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
+
   deploy:
     needs: build
     runs-on: ubuntu-latest

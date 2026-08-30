@@ -9,10 +9,14 @@ export default defineConfig({
   timeout: 90_000,
   workers: 1,
   webServer: {
-    command: `BASE_PATH=${basePath} npm run build >/tmp/localtools-e2e-build.log && exec env BASE_PATH=${basePath} PORT=4173 npm run serve:dist`,
+    command: `BASE_PATH=${basePath} npm run build >/tmp/localtools-e2e-build.log && exec env BASE_PATH=${basePath} PORT=4173 node scripts/serve-dist.mjs`,
     url: `${origin}${basePath}`,
     reuseExistingServer: false,
   },
   use: { baseURL: `${origin}${basePath}`, trace: 'retain-on-failure' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
 });

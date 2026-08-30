@@ -15,7 +15,7 @@ Release commands are:
 - `npm run typecheck`
 - `npm test`
 - `BASE_PATH=/localtools/ npm run build`
-- `npm run test:e2e`
+- `npm run test:e2e:cross-browser`
 - `npm audit --omit=dev`
 
-Definition of done requires green unit and production Chromium E2E gates, direct-route refresh, real local file-processing journeys, 100k CSV stress, offline processing, network-privacy assertions, mobile/accessibility checks, service-worker update verification, reproducible static build checks, accurate README, clean Git status, and no secrets.
+Definition of done requires green unit gates and the required Chromium/Firefox/WebKit production E2E matrix, direct-route refresh, real local file-processing journeys, 100k CSV stress, browser-appropriate offline evidence, network-privacy assertions, mobile/accessibility checks, service-worker update verification, reproducible static build checks, accurate README, clean Git status, and no secrets. Browser-specific skips must describe a real harness/capability limit and must never be used to hide a product failure.

@@ -41,11 +41,11 @@ npm run dev
 npm run lint
 npm run typecheck
 npm test
-npm run test:e2e
+npm run test:e2e:cross-browser
 npm audit --omit=dev
 ```
 
-`npm run test:e2e` builds a production artifact, serves it through the strict static server, and runs Chromium with one worker. The release suite covers real image/PDF/CSV/JSON processing and downloads, direct static routes, 100,000-row CSV stress, mobile layout, offline processing, request-level privacy checks, manifest/icon/service-worker checks, and a real service-worker N→N+1 user-confirmed update flow. QA screenshots are generated under ignored `artifacts/qa/`.
+The release E2E matrix runs Chromium, Firefox, and WebKit against the production static build with one worker per browser. It covers real image/PDF/CSV/JSON processing and downloads, direct static routes, 100,000-row CSV stress, mobile layout, request-level privacy checks, service-worker update verification, and offline behavior where Playwright's browser harness can represent it accurately. Chromium also runs the CDP-backed installability/manifest assertion. Firefox verifies service-worker cached-route navigation offline. Playwright WebKit currently blocks forced-offline navigation, lazy chunks, and Workers before service-worker interception, so those two forced-offline cases are explicit WebKit skips rather than false passes. QA screenshots are generated under ignored `artifacts/qa/`.
 
 ## Production build
 
@@ -77,7 +77,7 @@ Installation is optional. The browser URL remains immediately useful without ins
 
 ## Browser support philosophy
 
-LocalTools uses progressive enhancement and feature detection. Chromium is the automated release browser in this repository. WebP encoding and install-related browser surfaces depend on browser capability. Physical iOS Safari, Firefox, and WebKit are not claimed as verified until their corresponding release checks are actually run.
+LocalTools uses progressive enhancement and feature detection. Chromium, Firefox, and Playwright WebKit are automated release browsers in this repository, and GitHub Pages deployment is blocked until all required matrix jobs pass. WebP encoding and install-related browser surfaces still depend on browser capability. Chromium alone runs the CDP-backed app-manifest installability assertion. Playwright WebKit's forced-offline emulation cannot currently verify service-worker route recovery or cold lazy-chunk/Worker loading, so those cases remain explicitly unverified rather than being reported as passes. Physical iOS Safari / Add to Home Screen remains a separate device-level verification target.
 
 ## Known limitations
 

@@ -1,3 +1,5 @@
+import { parse as parseJsonWithErrors, type ParseError } from 'jsonc-parser';
+
 export const $ = <T extends Element>(selector: string, root: ParentNode = document) => root.querySelector<T>(selector);
 
 export function download(blob: Blob, name: string) {
@@ -103,14 +105,28 @@ export function csvToText(headers: string[], rows: string[][]) {
   return [headers, ...rows].map((row) => row.map(quote).join(',')).join('\n');
 }
 
-export function jsonError(error: unknown, input = '') {
-  const message = error instanceof Error ? error.message : String(error);
-  const positionMatch = message.match(/position\s+(\d+)/i);
-  if (!positionMatch) return message;
-  const position = Number(positionMatch[1]);
-  const before = input.slice(0, position);
+function lineAndColumn(input: string, position: number) {
+  const before = input.slice(0, Math.max(0, position));
   const line = before.split('\n').length;
   const column = position - (before.lastIndexOf('\n') + 1) + 1;
+  return { line, column };
+}
+
+export function jsonError(error: unknown, input = '') {
+  const message = error instanceof Error ? error.message : String(error);
+  const explicit = message.match(/line\s+(\d+)\s*,?\s*column\s+(\d+)/i);
+  if (explicit) return `${message} (line ${explicit[1]}, column ${explicit[2]})`;
+
+  const positionMatch = message.match(/position\s+(\d+)/i);
+  if (positionMatch) {
+    const { line, column } = lineAndColumn(input, Number(positionMatch[1]));
+    return `${message} (line ${line}, column ${column})`;
+  }
+
+  const errors: ParseError[] = [];
+  parseJsonWithErrors(input, errors, { allowTrailingComma: false, disallowComments: true });
+  if (!errors.length) return message;
+  const { line, column } = lineAndColumn(input, errors[0].offset);
   return `${message} (line ${line}, column ${column})`;
 }
 

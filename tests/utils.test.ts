@@ -34,5 +34,7 @@ describe('CSV parser/filter/export', () => {
 describe('JSON operations and diagnostics', () => {
   it('pretty prints and minifies without mutation on validation', () => { const source = '{"a":1}'; expect(jsonOperation(source, 'pretty')).toBe('{\n  "a": 1\n}'); expect(jsonOperation('{ "a": 1 }', 'minify')).toBe('{"a":1}'); expect(jsonOperation(source, 'validate')).toBe(source); });
   it('reports line and column for positioned errors', () => expect(jsonError(new SyntaxError('Unexpected token at position 8'), '{\n  "a": 1\n}')).toContain('line 2, column 7'));
+  it('normalizes browser-native line and column diagnostics', () => expect(jsonError(new SyntaxError('expected property at line 3 column 3'), '{\n  \"a\": 1,\n  bad\n}')).toContain('line 3, column 3'));
+  it('derives line and column when the browser error has no position', () => expect(jsonError(new SyntaxError('Property name must be a string literal'), '{\n  \"a\": 1,\n  bad\n}')).toMatch(/line \d+, column \d+/));
   it('rejects malformed JSON', () => expect(() => jsonOperation('{bad', 'validate')).toThrow());
 });
