@@ -1,7 +1,9 @@
 export type Category = 'Images' | 'PDF' | 'Data' | 'Developer';
+export type ToolModule = 'image' | 'pdf' | 'csv' | 'json';
 
 export type Tool = {
   id: string;
+  module: ToolModule;
   name: string;
   description: string;
   category: Category;
@@ -20,6 +22,7 @@ export type Tool = {
 export const TOOLS: Tool[] = [
   {
     id: 'compress-image',
+    module: 'image',
     name: 'Compress Image',
     description: 'Reduce picture size while keeping it looking sharp.',
     category: 'Images',
@@ -36,6 +39,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'resize-image',
+    module: 'image',
     name: 'Resize Image',
     description: 'Change image dimensions without accidental stretching.',
     category: 'Images',
@@ -51,6 +55,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'convert-image',
+    module: 'image',
     name: 'Convert Image',
     description: 'Switch between JPG, PNG, and WebP in a click.',
     category: 'Images',
@@ -66,6 +71,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'merge-pdf',
+    module: 'pdf',
     name: 'Merge PDF',
     description: 'Join PDFs in the order you choose.',
     category: 'PDF',
@@ -82,6 +88,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'extract-pdf',
+    module: 'pdf',
     name: 'Extract PDF Pages',
     description: 'Save selected pages from a PDF as a new file.',
     category: 'PDF',
@@ -97,6 +104,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'csv-viewer',
+    module: 'csv',
     name: 'CSV Viewer',
     description: 'Explore large CSVs with search, sort, filters, and export.',
     category: 'Data',
@@ -113,6 +121,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'json-formatter',
+    module: 'json',
     name: 'JSON Formatter',
     description: 'Pretty-print, minify, validate, and download JSON.',
     category: 'Developer',

@@ -1,9 +1,21 @@
-# LocalTools
+# LocalTools repository rules
 
-LocalTools is a static, browser-first privacy tools PWA. Files are processed in browser memory and are never uploaded or persisted by default. The central registry in `src/registry.ts` is the single source of truth for the seven tools and their catalogue metadata. Do not duplicate tool listings in page code.
+LocalTools is a fully static, browser-first privacy toolbox. Production must remain useful without any backend, account, database, API key, telemetry, runtime CDN, remote font, or remote file-processing service.
 
-There is no backend, account, database, telemetry, runtime CDN, remote font, or external API. The service worker caches app assets only; never cache user files or Blob URLs. PWA updates must be visible and user-confirmed. Keep GitHub Pages base paths configurable through `BASE_PATH`.
+`src/registry.ts` is the single source of truth for the tool catalogue. Add a new tool through the registry plus its module/page/tests; do not create independent homepage/navigation/search catalogues.
 
-Verified commands: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`. Use `npm run dev` for local work. Do not commit secrets or generated user data.
+User files must be processed locally in browser memory and must not be uploaded or silently persisted. Never cache user-selected files, generated results, Blob URLs, or arbitrary runtime requests in the service worker. Treat file content and filenames as untrusted input; do not render them as raw HTML or execute uploaded text.
 
-Definition of done includes direct-load routes, offline shell/tools after priming, no processing-time network requests, accessible responsive UI, safety limits, tests, and an evidence report at `/tmp/localtools-codex-final.txt`.
+The site must build as real static directory routes and support configurable `BASE_PATH` for GitHub Pages or a root custom domain. PWA updates must wait and require explicit user activation; offline support must include all V1 routes/tools after priming.
+
+Release commands are:
+
+- `npm ci`
+- `npm run lint`
+- `npm run typecheck`
+- `npm test`
+- `BASE_PATH=/localtools/ npm run build`
+- `npm run test:e2e`
+- `npm audit --omit=dev`
+
+Definition of done requires green unit and production Chromium E2E gates, direct-route refresh, real local file-processing journeys, 100k CSV stress, offline processing, network-privacy assertions, mobile/accessibility checks, service-worker update verification, reproducible static build checks, accurate README, clean Git status, and no secrets.

@@ -17,7 +17,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: npm run test:e2e
+      - run: E2E_BASE_PATH=/${{ github.event.repository.name }}/ npm run test:e2e
       - run: BASE_PATH=/${{ github.event.repository.name }}/ npm run build
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
