@@ -1,10 +1,23 @@
+<div align="center">
+
 # LocalTools
 
-[🚀 Live Demo](https://aiagent-sg-2026.github.io/localtools/)
+**Private tools that run entirely in your browser.**
 
-LocalTools is a static, browser-first toolbox for private file work. The core promise is simple:
+No uploads. No accounts. No analytics. Your files stay on your device.
 
-> Private tools that run entirely in your browser. No uploads. No accounts. Your files stay on your device.
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_LocalTools-2ea44f?style=for-the-badge)](https://aiagent-sg-2026.github.io/localtools/)
+
+[![Pages](https://github.com/aiagent-sg-2026/localtools/actions/workflows/pages.yml/badge.svg)](https://github.com/aiagent-sg-2026/localtools/actions/workflows/pages.yml)
+[![Version](https://img.shields.io/github/package-json/v/aiagent-sg-2026/localtools?label=version)](https://github.com/aiagent-sg-2026/localtools)
+![Privacy](https://img.shields.io/badge/privacy-local--only-success)
+![PWA](https://img.shields.io/badge/PWA-enabled-informational)
+
+</div>
+
+LocalTools is a static, browser-first toolbox for private file work across images, PDFs, CSV, and JSON. It is designed to stay useful without requiring an account, backend, or file upload.
+
+## Tools
 
 V1.1 includes eight tools:
 
