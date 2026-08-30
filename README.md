@@ -1,5 +1,7 @@
 # LocalTools
 
+[🚀 Live Demo](https://aiagent-sg-2026.github.io/localtools/)
+
 LocalTools is a static, browser-first toolbox for private file work. The core promise is simple:
 
 > Private tools that run entirely in your browser. No uploads. No accounts. Your files stay on your device.
