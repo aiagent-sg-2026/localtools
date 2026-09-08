@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { lockedHeight, lockedWidth, validateDimensions } from '../src/image';
+import { checksumText, isSha256, normalizeSha256 } from '../src/hash';
 import { scanImageMetadata } from '../src/image-metadata';
 import { TOOLS, normalizePath, routeFor, searchTools, toolForPath } from '../src/registry';
 import { csvToText, csvRows, filterCsvRows, jsonError, jsonOperation, parsePageExpression, sortCsvRows } from '../src/utils';
 
 describe('registry and routes', () => {
-  it('has exactly eight unique tools, routes, and ids', () => { expect(TOOLS).toHaveLength(8); expect(new Set(TOOLS.map((x) => x.id)).size).toBe(8); expect(new Set(TOOLS.map((x) => x.route)).size).toBe(8); });
+  it('has exactly nine unique tools, routes, and ids', () => { expect(TOOLS).toHaveLength(9); expect(new Set(TOOLS.map((x) => x.id)).size).toBe(9); expect(new Set(TOOLS.map((x) => x.route)).size).toBe(9); });
   it('has required metadata and exactly four popular tools', () => { expect(TOOLS.every((x) => x.description && x.accepted.length && x.formats && x.faq && x.offline && x.status === 'ready')).toBe(true); expect(TOOLS.filter((x) => x.popular).map((x) => x.name)).toEqual(['Compress Image', 'Merge PDF', 'CSV Viewer', 'JSON Formatter']); });
   it('normalizes root and production paths', () => { expect(normalizePath('/localtools/', '/localtools/')).toBe('/'); expect(normalizePath('/localtools/image/compress/index.html', '/localtools/')).toBe('/image/compress/'); expect(toolForPath('/localtools/image/compress/', '/localtools/')?.id).toBe('compress-image'); expect(routeFor(TOOLS[0], '/localtools/')).toBe('/localtools/image/compress/'); });
-  it('tokenizes natural search terms', () => { expect(searchTools('reduce picture size').map((x) => x.id)).toEqual(['compress-image']); });
+  it('tokenizes natural search terms', () => { expect(searchTools('reduce picture size').map((x) => x.id)).toEqual(['compress-image']); expect(searchTools('verify checksum').map((x) => x.id)).toEqual(['file-hash']); });
 });
 
 describe('image helpers', () => {
@@ -36,6 +37,14 @@ describe('image privacy metadata scanner', () => {
     const bytes = new Uint8Array([...enc.encode('RIFF'), 20,0,0,0, ...enc.encode('WEBP'), ...enc.encode('EXIF'),0,0,0,0, ...enc.encode('XMP '),0,0,0,0]);
     expect(scanImageMetadata(bytes, 'image/webp')).toEqual(['EXIF', 'XMP']);
   });
+});
+
+
+describe('SHA-256 checksum helpers', () => {
+  const hash = 'a'.repeat(64);
+  it('normalizes common SHA-256 prefixes and casing', () => { expect(normalizeSha256(`SHA256: ${hash.toUpperCase()}`)).toBe(hash); expect(normalizeSha256(`sha-256: ${hash}`)).toBe(hash); });
+  it('validates exactly 64 hexadecimal characters', () => { expect(isSha256(hash)).toBe(true); expect(isSha256('g'.repeat(64))).toBe(false); expect(isSha256('a'.repeat(63))).toBe(false); });
+  it('exports conventional checksum lines and neutralizes filename newlines', () => expect(checksumText([{ name: 'safe\nname.txt', hash }])).toBe(`${hash}  safe name.txt\n`));
 });
 
 describe('PDF page expressions', () => {

@@ -1,5 +1,5 @@
 export type Category = 'Images' | 'PDF' | 'Data' | 'Developer';
-export type ToolModule = 'image' | 'metadata' | 'pdf' | 'csv' | 'json';
+export type ToolModule = 'image' | 'metadata' | 'pdf' | 'csv' | 'json' | 'hash';
 
 export type Tool = {
   id: string;
@@ -134,6 +134,22 @@ export const TOOLS: Tool[] = [
     faq: 'The configurable safety limit prevents unbounded browser memory use.',
     formats: 'CSV, UTF-8 text',
     popular: true,
+  },
+  {
+    id: 'file-hash',
+    module: 'hash',
+    name: 'File Hash / SHA-256',
+    description: 'Calculate and verify SHA-256 checksums for any local file.',
+    category: 'Developer',
+    route: '/developer/file-hash/',
+    icon: '#',
+    keywords: ['hash', 'sha256', 'sha-256', 'checksum', 'integrity', 'verify', 'file', 'digest'],
+    accepted: ['*/*'],
+    offline: true,
+    capabilities: ['Multi-file SHA-256', 'Checksum verification'],
+    status: 'ready',
+    faq: 'SHA-256 is calculated locally and can be compared with a published checksum without uploading the file.',
+    formats: 'Any local file',
   },
   {
     id: 'json-formatter',

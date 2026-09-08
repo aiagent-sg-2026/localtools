@@ -3,12 +3,13 @@ import { PDFDocument } from 'pdf-lib';
 import { scanImageMetadata } from '../../src/image-metadata';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 const rawBase = process.env.E2E_BASE_PATH || '/localtools/';
 const base = rawBase === '/' ? '/' : `/${rawBase.replace(/^\/+|\/+$/g, '')}/`;
 const routes = [
   'image/compress/', 'image/resize/', 'image/convert/', 'image/metadata-cleaner/',
-  'pdf/merge/', 'pdf/extract/', 'data/csv-viewer/', 'developer/json-formatter/',
+  'pdf/merge/', 'pdf/extract/', 'data/csv-viewer/', 'developer/file-hash/', 'developer/json-formatter/',
 ];
 
 async function imageBuffer(page: Page, width = 120, height = 60) {
@@ -104,24 +105,26 @@ function qa(page: Page, name: string) {
 
 test.beforeAll(() => fs.mkdirSync('artifacts/qa', { recursive: true }));
 
-test('homepage communicates privacy, four popular tools, eight catalogue tools, search, and no console errors', async ({ page }) => {
+test('homepage communicates privacy, four popular tools, nine catalogue tools, search, and no console errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto(base);
   await expect(page.getByRole('heading', { name: 'Useful tools. Quietly local.' })).toBeVisible();
   await expect(page.getByText('No uploads. No accounts. Your files stay on your device.')).toBeVisible();
   await expect(page.locator('.popular .tool-card')).toHaveCount(4);
-  await expect(page.locator('.category:not(.popular) .tool-card')).toHaveCount(8);
+  await expect(page.locator('.category:not(.popular) .tool-card')).toHaveCount(9);
   for (const name of ['Compress Image', 'Merge PDF', 'CSV Viewer', 'JSON Formatter']) {
     await expect(page.locator('.popular').getByText(name, { exact: true })).toBeVisible();
   }
   await page.getByPlaceholder('Try “reduce picture size”').fill('reduce picture size');
   await expect(page.getByText('Compress Image', { exact: true }).first()).toBeVisible();
+  await page.getByPlaceholder('Try “reduce picture size”').fill('verify checksum');
+  await expect(page.getByText('File Hash / SHA-256', { exact: true }).first()).toBeVisible();
   await qa(page, 'homepage-desktop');
   expect(errors).toEqual([]);
 });
 
-test('all eight production directory routes load directly, reload, and unknown route is 404', async ({ page, request }) => {
+test('all nine production directory routes load directly, reload, and unknown route is 404', async ({ page, request }) => {
   for (const route of routes) {
     const staticResponse = await request.get(`${base}${route}`);
     const staticHtml = await staticResponse.text();
@@ -198,6 +201,49 @@ test('EXIF Privacy Cleaner detects metadata, rebuilds pixels locally, and verifi
   expect(scanImageMetadata(new Uint8Array(cleaned), 'image/jpeg')).toEqual([]);
   expect(await imageDimensions(page, cleaned, 'image/jpeg')).toEqual({ width: 96, height: 48 });
   await qa(page, 'metadata-cleaned');
+});
+
+
+test('File Hash calculates multi-file SHA-256, verifies expected hashes, copies, and exports checksums', async ({ page }) => {
+  const first = Buffer.from('LocalTools hash fixture\n');
+  const second = Buffer.from('second local file');
+  const expected = createHash('sha256').update(first).digest('hex');
+  const secondHash = createHash('sha256').update(second).digest('hex');
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (value: string) => { (window as typeof window & { __localtoolsCopied?: string }).__localtoolsCopied = value; } },
+    });
+  });
+  await page.goto(`${base}developer/file-hash/`);
+  await page.locator('input[type=file]').setInputFiles([
+    { name: 'alpha.txt', mimeType: 'text/plain', buffer: first },
+    { name: 'beta.bin', mimeType: 'application/octet-stream', buffer: second },
+  ]);
+  await expect(page.locator('.hash-row')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Calculate SHA-256' }).click();
+  await expect(page.locator('.hash-value')).toHaveCount(2);
+  await expect(page.locator('.hash-value').nth(0)).toHaveText(expected);
+  await expect(page.locator('.hash-value').nth(1)).toHaveText(secondHash);
+  await expect(page.getByText('2 of 2 files hashed')).toBeVisible();
+
+  const verify = page.getByPlaceholder('Paste a 64-character SHA-256 checksum');
+  await verify.fill(`SHA256: ${expected.toUpperCase()}`);
+  await expect(page.getByText('Match: alpha.txt')).toBeVisible();
+  await verify.fill('not-a-hash');
+  await expect(page.getByText(/exactly 64 hexadecimal characters/)).toBeVisible();
+  await verify.fill(expected);
+
+  await page.getByRole('button', { name: 'Copy hash' }).first().click();
+  expect(await page.evaluate(() => (window as typeof window & { __localtoolsCopied?: string }).__localtoolsCopied)).toBe(expected);
+  await page.getByRole('button', { name: 'Copy all' }).click();
+  expect(await page.evaluate(() => (window as typeof window & { __localtoolsCopied?: string }).__localtoolsCopied)).toContain(`${expected}  alpha.txt`);
+
+  const exported = await downloadBytes(page, 'Download .sha256');
+  expect(exported.toString('utf8')).toBe(`${expected}  alpha.txt\n${secondHash}  beta.bin\n`);
+  await qa(page, 'hash-results');
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect(page.locator('.hash-row')).toHaveCount(0);
 });
 
 test('PDF merge reorders/removes and PDF extract preserves requested page order in downloads', async ({ page }) => {
@@ -354,14 +400,14 @@ test('offline navigation serves all cached routes where the browser harness supp
   }
 });
 
-test('offline mode still processes representative image, PDF, CSV, and JSON work', async ({ page, context }, testInfo) => {
+test('offline mode still processes representative image, PDF, CSV, hashing, and JSON work', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name === 'webkit', 'Playwright WebKit offline emulation blocks lazy chunks and Workers before service-worker interception.');
   const png = await imageBuffer(page, 80, 40);
   const pdf = await pdfBuffer([300, 301]);
   await primeServiceWorker(page);
 
   const toolPages: Page[] = [];
-  for (const route of ['image/compress/', 'pdf/extract/', 'data/csv-viewer/', 'developer/json-formatter/']) {
+  for (const route of ['image/compress/', 'pdf/extract/', 'data/csv-viewer/', 'developer/file-hash/', 'developer/json-formatter/']) {
     const toolPage = await context.newPage();
     await toolPage.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' });
     await expect(toolPage.locator('h1')).toBeVisible();
@@ -372,7 +418,7 @@ test('offline mode still processes representative image, PDF, CSV, and JSON work
   await context.setOffline(true);
   try {
     expect(await page.evaluate(() => navigator.onLine)).toBe(false);
-    const [imagePage, pdfPage, csvPage, jsonPage] = toolPages;
+    const [imagePage, pdfPage, csvPage, hashPage, jsonPage] = toolPages;
 
     await imagePage.locator('input[type=file]').setInputFiles({ name: 'offline.png', mimeType: 'image/png', buffer: png });
     await imagePage.getByRole('button', { name: 'Process image' }).click();
@@ -388,6 +434,12 @@ test('offline mode still processes representative image, PDF, CSV, and JSON work
     await csvPage.getByPlaceholder('Search rows').fill('private');
     await expect(csvPage.locator('tbody tr')).toHaveCount(1);
 
+    const offlineHash = Buffer.from('offline hash fixture');
+    const offlineExpected = createHash('sha256').update(offlineHash).digest('hex');
+    await hashPage.locator('input[type=file]').setInputFiles({ name: 'offline.bin', mimeType: 'application/octet-stream', buffer: offlineHash });
+    await hashPage.getByRole('button', { name: 'Calculate SHA-256' }).click();
+    await expect(hashPage.locator('.hash-value')).toHaveText(offlineExpected);
+
     await jsonPage.locator('textarea').fill('{"offline":true}');
     await jsonPage.getByRole('button', { name: 'Pretty-print' }).click();
     expect(await jsonPage.locator('textarea').inputValue()).toContain('\n  "offline": true');
@@ -397,7 +449,7 @@ test('offline mode still processes representative image, PDF, CSV, and JSON work
   }
 });
 
-test('representative image, metadata-cleaning, PDF, and CSV processing makes no cross-origin or mutating requests', async ({ page }) => {
+test('representative image, metadata-cleaning, PDF, CSV, and hashing makes no cross-origin or mutating requests', async ({ page }) => {
   const requests: { url: string; method: string }[] = [];
   const png = await imageBuffer(page, 64, 32);
   const pdf = await pdfBuffer([300, 301]);
@@ -423,6 +475,12 @@ test('representative image, metadata-cleaning, PDF, and CSV processing makes no 
   await page.goto(`${base}data/csv-viewer/`);
   await page.locator('input[type=file]').setInputFiles({ name: 'private.csv', mimeType: 'text/csv', buffer: Buffer.from('a,b\n1,2\n3,4') });
   await expect(page.getByText(/2 rows · 2 columns/)).toBeVisible();
+
+  await page.goto(`${base}developer/file-hash/`);
+  const privateHash = Buffer.from('private hash fixture');
+  await page.locator('input[type=file]').setInputFiles({ name: 'private.bin', mimeType: 'application/octet-stream', buffer: privateHash });
+  await page.getByRole('button', { name: 'Calculate SHA-256' }).click();
+  await expect(page.locator('.hash-value')).toHaveText(createHash('sha256').update(privateHash).digest('hex'));
 
   const origin = new URL(page.url()).origin;
   const crossOrigin = requests.filter((item) => new URL(item.url).origin !== origin);

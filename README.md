@@ -15,11 +15,11 @@ No uploads. No accounts. No analytics. Your files stay on your device.
 
 </div>
 
-LocalTools is a static, browser-first toolbox for private file work across images, PDFs, CSV, and JSON. It is designed to stay useful without requiring an account, backend, or file upload.
+LocalTools is a static, browser-first toolbox for private file work across images, PDFs, CSV, JSON, and file integrity checks. It is designed to stay useful without requiring an account, backend, or file upload.
 
 ## Tools
 
-V1.1 includes eight tools:
+V1.2 includes nine tools:
 
 - Compress Image — JPG, PNG, and feature-detected WebP output.
 - Resize Image — dimensions, aspect-ratio lock, presets, preview, download.
@@ -28,21 +28,22 @@ V1.1 includes eight tools:
 - Merge PDF — local multi-PDF merge with reorder/remove controls.
 - Extract PDF Pages — expressions such as `3-5,8,11-15`.
 - CSV Viewer — Worker parsing, search, sort, column filter/visibility, pagination, filtered CSV export.
+- File Hash / SHA-256 — calculate multi-file SHA-256 checksums locally, copy/export them, and verify an expected checksum.
 - JSON Formatter — file/paste input, pretty-print, minify, validate, copy, and download.
 
 ## Architecture and privacy
 
-The production site is only static HTML, CSS, JavaScript, locally bundled dependencies, a CSV Web Worker, and a service worker. There is no backend, database, login, account, telemetry, analytics, runtime CDN, remote font, API key, or remote file-processing API.
+The production site is only static HTML, CSS, JavaScript, locally bundled dependencies, CSV/SHA-256 Web Workers, and a service worker. There is no backend, database, login, account, telemetry, analytics, runtime CDN, remote font, API key, or remote file-processing API.
 
 Selected files are read into browser memory, processed locally, and exposed as downloadable `Blob` results. User files and generated results are not persisted by default. The service worker caches only a generated allowlist of application routes/assets; it does not runtime-cache arbitrary requests, user files, or Blob URLs.
 
 The central catalogue is `src/registry.ts`. Homepage search, categories, route metadata, and tool discovery derive from that registry instead of separate hardcoded catalogues.
 
-Heavy CSV parsing runs in `src/workers/csv.worker.ts`. PDF support uses a locally bundled lazy `pdf-lib` chunk. Image work uses browser canvas/image APIs.
+Heavy CSV parsing runs in `src/workers/csv.worker.ts`. PDF support uses a locally bundled lazy `pdf-lib` chunk. Image work uses browser canvas/image APIs. File hashing uses Web Crypto SHA-256 inside a local Web Worker.
 
 ## Safety limits
 
-Browser RAM varies significantly across phones and desktops, so V1.1 uses conservative configurable thresholds from `src/safety.ts` rather than claiming unlimited file sizes. Current defaults are 100 MB per file, 250 MB aggregate PDF input, 50 MB CSV input, 250,000 CSV rows, and 1,000 PDF pages.
+Browser RAM varies significantly across phones and desktops, so V1.2 uses conservative configurable thresholds from `src/safety.ts` rather than claiming unlimited file sizes. Current defaults are 100 MB per file, 250 MB aggregate multi-file input (including PDF merge and hashing), 50 MB CSV input, 250,000 CSV rows, and 1,000 PDF pages.
 
 ## Local development
 
@@ -61,7 +62,7 @@ npm run test:e2e:cross-browser
 npm audit --omit=dev
 ```
 
-The release E2E matrix runs Chromium, Firefox, and WebKit against the production static build with one worker per browser. It covers real image/PDF/CSV/JSON processing and downloads, direct static routes, 100,000-row CSV stress, mobile layout, request-level privacy checks, service-worker update verification, and offline behavior where Playwright's browser harness can represent it accurately. Chromium also runs the CDP-backed installability/manifest assertion. Firefox verifies service-worker cached-route navigation offline. Playwright WebKit currently blocks forced-offline navigation, lazy chunks, and Workers before service-worker interception, so those two forced-offline cases are explicit WebKit skips rather than false passes. QA screenshots are generated under ignored `artifacts/qa/`.
+The release E2E matrix runs Chromium, Firefox, and WebKit against the production static build with one worker per browser. It covers real image/PDF/CSV/JSON/hash processing and downloads, direct static routes, 100,000-row CSV stress, mobile layout, request-level privacy checks, service-worker update verification, and offline behavior where Playwright's browser harness can represent it accurately. Chromium also runs the CDP-backed installability/manifest assertion. Firefox verifies service-worker cached-route navigation offline. Playwright WebKit currently blocks forced-offline navigation, lazy chunks, and Workers before service-worker interception, so those two forced-offline cases are explicit WebKit skips rather than false passes. QA screenshots are generated under ignored `artifacts/qa/`.
 
 ## Production build
 
@@ -87,7 +88,7 @@ Set an absolute `SITE_URL` only when a real production origin is known. When sup
 
 ## PWA and offline behavior
 
-After an online prime, the homepage and all eight V1.1 tools are cached as an application allowlist and can run offline. Updates do not call `skipWaiting()` during install. A new worker waits, LocalTools shows `Update now`, and activation occurs only after the user chooses it; an updating state is shown before reload and a timeout message handles failure.
+After an online prime, the homepage and all nine V1.2 tools are cached as an application allowlist and can run offline. Updates do not call `skipWaiting()` during install. A new worker waits, LocalTools shows `Update now`, and activation occurs only after the user chooses it; an updating state is shown before reload and a timeout message handles failure.
 
 Installation is optional. The browser URL remains immediately useful without installing the PWA.
 
@@ -100,5 +101,6 @@ LocalTools uses progressive enhancement and feature detection. Chromium, Firefox
 - Password-protected or malformed PDFs may not be readable by `pdf-lib`.
 - Image encoding behavior depends on the browser; PNG is treated as lossless and does not expose a fake JPEG-style quality setting.
 - Very large files can exceed browser/device memory even below configured thresholds on constrained devices.
-- V1.1 intentionally has no cloud persistence, account sync, OCR, audio/video processing, or AI/backend integration.
+- File Hash uses Web Crypto SHA-256 and therefore requires a secure browser context; the production GitHub Pages site is HTTPS.
+- V1.2 intentionally has no cloud persistence, account sync, OCR, audio/video processing, or AI/backend integration.
 - EXIF Privacy Cleaner verifies common EXIF/XMP/IPTC/text/comment/timestamp metadata containers; it does not claim detection of every proprietary vendor-specific metadata block. JPEG/WebP cleaning re-encodes pixels and can change compression or file size.

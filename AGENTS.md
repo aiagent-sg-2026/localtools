@@ -6,7 +6,7 @@ LocalTools is a fully static, browser-first privacy toolbox. Production must rem
 
 User files must be processed locally in browser memory and must not be uploaded or silently persisted. Never cache user-selected files, generated results, Blob URLs, or arbitrary runtime requests in the service worker. Treat file content and filenames as untrusted input; do not render them as raw HTML or execute uploaded text.
 
-The site must build as real static directory routes and support configurable `BASE_PATH` for GitHub Pages or a root custom domain. PWA updates must wait and require explicit user activation; offline support must include all V1 routes/tools after priming.
+The site must build as real static directory routes and support configurable `BASE_PATH` for GitHub Pages or a root custom domain. PWA updates must wait and require explicit user activation; offline support must include every ready registry route/tool after priming.
 
 Release commands are:
 
